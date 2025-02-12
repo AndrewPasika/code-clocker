@@ -1,18 +1,28 @@
 <!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
 <idea-plugin>
-    <id>com.github.andrewpasika.codeclocker</id>
-    <name>code-clocker</name>
+    <id>com.codeclocker</id>
+    <name>CodeClocker</name>
     <vendor>andrewpasika</vendor>
 
     <depends>com.intellij.modules.platform</depends>
+    <depends>com.intellij.java</depends>
 
     <resource-bundle>messages.MyBundle</resource-bundle>
 
     <extensions defaultExtensionNs="com.intellij">
-        <toolWindow factoryClass="com.github.andrewpasika.codeclocker.toolWindow.MyToolWindowFactory" id="MyToolWindow"/>
+        <applicationService serviceImplementation="com.codeclocker.services.ActivityTracker" />
     </extensions>
 
     <applicationListeners>
-        <listener class="com.github.andrewpasika.codeclocker.listeners.MyApplicationActivationListener" topic="com.intellij.openapi.application.ApplicationActivationListener"/>
+        <listener class="com.codeclocker.listeners.AppLevelRegistrator" topic="com.intellij.openapi.application.ApplicationActivationListener"/>
     </applicationListeners>
+
+    <actions>
+        <action id="com.codeclocker.action.ShowStatisticsAction"
+          class="com.codeclocker.action.ShowStatisticsAction"
+          text="Show Statistics"
+          description="Show user activity statistics.">
+            <add-to-group group-id="ToolsMenu" anchor="first"/>
+        </action>
+    </actions>
 </idea-plugin>
