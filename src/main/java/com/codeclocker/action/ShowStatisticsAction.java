@@ -27,21 +27,24 @@ public class ShowStatisticsAction extends AnAction {
     activityTracker.getTimeSpentPerProject().forEach((name, time) -> {
       stats.append(name).append(": ")
           .append(Duration.ofNanos(time.timeSpent().getNanoTime()).getSeconds())
-          .append(" seconds\n");
+          .append(" seconds; ").append(time.additions().get()).append(" added lines; ")
+          .append(time.removals().get()).append(" removed lines").append("\n");
     });
 
     stats.append("\n").append(MyBundle.message("timeSpentPerFile")).append("\n");
     activityTracker.getTimeSpentPerFile(project).forEach((name, time) -> {
       stats.append(name).append(": ")
           .append(Duration.ofNanos(time.timeSpent().getNanoTime()).getSeconds())
-          .append(" seconds\n");
+          .append(" seconds; ").append(time.additions().get()).append(" added lines; ")
+          .append(time.removals().get()).append(" removed lines").append("\n");
     });
 
     stats.append("\n").append(MyBundle.message("timeSpentPerModule")).append("\n");
     activityTracker.getTimeSpentPerModule(project).forEach((name, time) -> {
       stats.append(name).append(": ")
           .append(Duration.ofNanos(time.timeSpent().getNanoTime()).getSeconds())
-          .append(" seconds\n");
+          .append(" seconds; ").append(time.additions().get()).append(" added lines; ")
+          .append(time.removals().get()).append(" removed lines").append("\n");
     });
 
     // Show statistics in a dialog

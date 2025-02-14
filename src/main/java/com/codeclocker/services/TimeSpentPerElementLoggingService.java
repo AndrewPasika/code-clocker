@@ -4,6 +4,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 
 public class TimeSpentPerElementLoggingService {
 
@@ -12,6 +13,16 @@ public class TimeSpentPerElementLoggingService {
 
   public void log(String elementName) {
     log(elementName, Map.of());
+  }
+
+  public void compute(String element, Consumer<TimeSpentSample> consumer) {
+    this.timingByElement.compute(element, (name, sample) -> {
+      if (sample == null) {
+        sample = TimeSpentSample.create(Map.of());
+      }
+      consumer.accept(sample);
+      return sample;
+    });
   }
 
   public void log(String currentElement, Map<String, String> metadata) {

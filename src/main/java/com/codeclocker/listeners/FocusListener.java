@@ -1,7 +1,10 @@
-package com.codeclocker.listeners.level;
+package com.codeclocker.listeners;
+
+import static java.awt.AWTEvent.FOCUS_EVENT_MASK;
 
 import com.codeclocker.services.ActivityTracker;
 import com.intellij.ide.DataManager;
+import com.intellij.openapi.Disposable;
 import com.intellij.openapi.actionSystem.CommonDataKeys;
 import com.intellij.openapi.actionSystem.DataContext;
 import com.intellij.openapi.application.ApplicationManager;
@@ -11,15 +14,18 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.roots.ProjectFileIndex;
 import com.intellij.openapi.vfs.VirtualFile;
 import java.awt.AWTEvent;
+import java.awt.Toolkit;
 import java.awt.event.AWTEventListener;
 import java.awt.event.FocusEvent;
 
-public class SingleFocusListener implements AWTEventListener {
+public class FocusListener implements AWTEventListener, Disposable {
 
-  private static final Logger LOG = Logger.getInstance(SingleFocusListener.class);
+  private static final Logger LOG = Logger.getInstance(FocusListener.class);
   private final ActivityTracker activityTracker;
+  private final DataManager dataManager;
 
-  public SingleFocusListener() {
+  public FocusListener() {
+    this.dataManager = DataManager.getInstance();
     this.activityTracker = ApplicationManager.getApplication().getService(ActivityTracker.class);
   }
 
@@ -29,26 +35,35 @@ public class SingleFocusListener implements AWTEventListener {
       return;
     }
 
-    DataContext dataContext = DataManager.getInstance()
-        .getDataContext(((FocusEvent) event).getComponent());
+    DataContext dataContext = dataManager.getDataContext(((FocusEvent) event).getComponent());
     Project project = dataContext.getData(CommonDataKeys.PROJECT);
     if (project == null) {
       LOG.warn("Project is null. Doing nothing");
       return;
     }
 
-    activityTracker.logTimePerProject(project);
+    activityTracker.logTime(project);
 
     VirtualFile file = CommonDataKeys.VIRTUAL_FILE.getData(dataContext);
     if (file == null) {
       return;
     }
 
-    activityTracker.logTimeSpentPerFile(project, file.getName(), file.getFileType().getName());
+    activityTracker.logTime(project, file.getName(), file.getFileType().getName());
 
-    Module module = ProjectFileIndex.getInstance(project).getModuleForFile(file);
-    if (module != null) {
-      activityTracker.logTimePerModule(project, module.getName());
-    }
+    // todo?
+    ApplicationManager.getApplication().executeOnPooledThread(() -> {
+      ApplicationManager.getApplication().runReadAction(() -> {
+        Module module = ProjectFileIndex.getInstance(project).getModuleForFile(file);
+        if (module != null) {
+          activityTracker.logTime(project, module.getName());
+        }
+      });
+    });
+  }
+
+  @Override
+  public void dispose() {
+    Toolkit.getDefaultToolkit().removeAWTEventListener(this);
   }
 }

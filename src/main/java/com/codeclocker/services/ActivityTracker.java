@@ -2,7 +2,9 @@ package com.codeclocker.services;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
+import com.intellij.openapi.module.Module;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.vfs.VirtualFile;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Objects;
@@ -27,6 +29,22 @@ public class ActivityTracker {
     this.scheduledTask = new AtomicReference<>(schedule());
   }
 
+  public void logAdditions(Project project, Module module, VirtualFile file, long lines) {
+    timeSpentPerProject.compute(project.getName(), sample -> sample.incrementAdditions(lines));
+    timeSpentPerModuleByProject.get(project.getName())
+        .compute(module.getName(), sample -> sample.incrementAdditions(lines));
+    timeSpentPerFileByProject.get(project.getName())
+        .compute(file.getName(), sample -> sample.incrementAdditions(lines));
+  }
+
+  public void logRemovals(Project project, Module module, VirtualFile file, long lines) {
+    timeSpentPerProject.compute(project.getName(), sample -> sample.incrementRemovals(lines));
+    timeSpentPerModuleByProject.get(project.getName())
+        .compute(module.getName(), sample -> sample.incrementRemovals(lines));
+    timeSpentPerFileByProject.get(project.getName())
+        .compute(file.getName(), sample -> sample.incrementRemovals(lines));
+  }
+
   public Map<String, TimeSpentSample> getTimeSpentPerProject() {
     return this.timeSpentPerProject.getTimingByElement();
   }
@@ -39,19 +57,19 @@ public class ActivityTracker {
     return this.timeSpentPerFileByProject.get(project.getName()).getTimingByElement();
   }
 
-  public void logTimePerProject(Project project) {
+  public void logTime(Project project) {
     pauseOtherProjects(project);
     rescheduleInactivityTask();
     timeSpentPerProject.log(project.getName());
   }
 
-  public void logTimePerModule(Project project, String module) {
+  public void logTime(Project project, String module) {
     pauseOtherProjects(project);
     rescheduleInactivityTask();
     log(timeSpentPerModuleByProject, project, module, Map.of());
   }
 
-  public void logTimeSpentPerFile(Project project, String file, String fileType) {
+  public void logTime(Project project, String file, String fileType) {
     pauseOtherProjects(project);
     rescheduleInactivityTask();
     log(timeSpentPerFileByProject, project, file, Map.of("fileType", fileType));
@@ -83,7 +101,7 @@ public class ActivityTracker {
     });
   }
 
-  private void pause() {
+  public void pause() {
     timeSpentPerProject.pauseDueToInactivity();
     currentProject.updateAndGet(active -> {
       if (active == null) {
